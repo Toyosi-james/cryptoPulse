@@ -28,11 +28,23 @@ export default function MarketList() {
   const coinsPerPage = 20;
   const [showFilter, setShowFilter] = useState(false);
 
-  // ✅ Fetch coins through your internal API route
+  // ✅ Fetch directly from CoinGecko API (with sparkline)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("/api/markets"); // ✅ using your Next.js route
+        const res = await axios.get(
+          "https://api.coingecko.com/api/v3/coins/markets",
+          {
+            params: {
+              vs_currency: "usd",
+              order: "market_cap_desc",
+              per_page: 100,
+              page: 1,
+              sparkline: true,
+              price_change_percentage: "24h",
+            },
+          }
+        );
         setCoins(res.data);
       } catch (error) {
         console.error("Error fetching data", error);
@@ -75,7 +87,10 @@ export default function MarketList() {
   // Pagination
   const totalPages = Math.ceil(filteredCoins.length / coinsPerPage);
   const startIndex = (page - 1) * coinsPerPage;
-  const displayedCoins = filteredCoins.slice(startIndex, startIndex + coinsPerPage);
+  const displayedCoins = filteredCoins.slice(
+    startIndex,
+    startIndex + coinsPerPage
+  );
 
   const handleRowClick = (id: string) => {
     router.push(`/coin/${id}`);
@@ -165,18 +180,31 @@ export default function MarketList() {
                     className="w-6 h-6 sm:w-8 sm:h-8 rounded-full"
                   />
                   <div>
-                    <p className="font-semibold text-white text-sm sm:text-base">{coin.name}</p>
-                    <p className="text-xs text-gray-400 uppercase">{coin.symbol}</p>
+                    <p className="font-semibold text-white text-sm sm:text-base">
+                      {coin.name}
+                    </p>
+                    <p className="text-xs text-gray-400 uppercase">
+                      {coin.symbol}
+                    </p>
                   </div>
                 </td>
 
                 <td className="p-3 sm:p-4 w-[100px] sm:w-[150px]">
                   <ResponsiveContainer width="100%" height={40}>
-                    <LineChart data={coin?.sparkline_in_7d?.price.map((p, i) => ({ i, p }))}>
+                    <LineChart
+                      data={coin?.sparkline_in_7d?.price?.map((p, i) => ({
+                        i,
+                        p,
+                      }))}
+                    >
                       <Line
                         type="monotone"
                         dataKey="p"
-                        stroke={coin?.price_change_percentage_24h >= 0 ? "#10b981" : "#ef4444"}
+                        stroke={
+                          coin.price_change_percentage_24h >= 0
+                            ? "#10b981"
+                            : "#ef4444"
+                        }
                         strokeWidth={2}
                         dot={false}
                       />
@@ -190,7 +218,9 @@ export default function MarketList() {
 
                 <td
                   className={`text-right p-3 sm:p-4 font-medium text-xs sm:text-sm ${
-                    coin.price_change_percentage_24h >= 0 ? "text-green-400" : "text-red-400"
+                    coin.price_change_percentage_24h >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
                   }`}
                 >
                   {coin.price_change_percentage_24h.toFixed(2)}%
